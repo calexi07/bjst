@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<title>Edge // Poker Study Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0c10; --panel:#12151b; --panel2:#171b22; --border:#232830; --border-soft:#1b1f27;
+  --text:#e8eaed; --muted:#8b93a1; --muted2:#5b6472;
+  --green:#34c77b; --green-dim:#1d5c3e; --red:#e5484d; --red-dim:#5c2528;
+  --amber:#f5a623; --blue:#5b8def; --violet:#8b7cf6;
+  --mono:'JetBrains Mono',ui-monospace,'SF Mono',monospace; --sans:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+*{box-sizing:border-box;} html,body{margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;-webkit-font-smoothing:antialiased;}
+::selection{background:var(--amber);color:#0a0c10;}
+
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 22px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#0d1015,#0a0c10);flex-wrap:wrap;gap:10px;}
+.brand{display:flex;align-items:center;gap:12px;}
+.brand-mark{width:30px;height:30px;border-radius:6px;background:linear-gradient(135deg,var(--violet),#5642c9);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:13px;color:#0a0812;}
+.brand-name{font-weight:700;font-size:15px;letter-spacing:.02em;}
+.brand-sub{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.04em;}
+.rta-note{font-family:var(--mono);font-size:10.5px;color:var(--amber);border:1px solid #4a3510;background:#1a1409;padding:5px 10px;border-radius:6px;max-width:340px;}
+
+.tabs{display:flex;gap:6px;padding:12px 22px 0;border-bottom:1px solid var(--border);background:#0a0c10;}
+.tab-btn{background:transparent;border:1px solid transparent;border-bottom:none;color:var(--muted);font-family:var(--sans);font-weight:600;font-size:13px;padding:10px 16px;border-radius:8px 8px 0 0;cursor:pointer;}
+.tab-btn.active{background:var(--panel);color:var(--text);border-color:var(--border);}
+.tab-panel{display:none;padding:18px 22px 28px;}
+.tab-panel.active{display:block;}
+
+.grid{display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start;}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px;}
+.panel + .panel{margin-top:16px;}
+.panel-title{font-family:var(--mono);font-size:11px;letter-spacing:.09em;color:var(--muted);text-transform:uppercase;margin:0 0 12px 0;display:flex;justify-content:space-between;align-items:center;}
+
+button{font-family:var(--sans);cursor:pointer;border-radius:7px;border:1px solid var(--border);background:var(--panel2);color:var(--text);padding:8px 12px;font-size:13px;font-weight:500;transition:.12s border-color,.12s background;}
+button:hover{border-color:var(--muted2);}
+button:active{transform:translateY(1px);}
+button.primary{background:var(--violet);color:#0a0812;border-color:var(--violet);font-weight:700;}
+button.primary:hover{background:#a196f9;}
+button.ghost{background:transparent;}
+button.small{padding:5px 9px;font-size:12px;}
+button:disabled{opacity:.35;cursor:not-allowed;}
+button.active-toggle{background:var(--blue);border-color:var(--blue);color:#06101f;font-weight:700;}
+
+/* ---------- card slots + palette ---------- */
+.slots-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;}
+.card-slot{
+  width:52px;height:68px;border-radius:8px;border:1.5px dashed var(--border);
+  display:flex;align-items:center;justify-content:center;font-family:var(--mono);
+  font-weight:700;font-size:16px;background:var(--panel2);cursor:pointer;
+}
+.card-slot.filled{border-style:solid;background:#fff;color:#111;}
+.card-slot.filled.red{color:#c8262d;}
+.card-slot.active{outline:2px solid var(--amber);outline-offset:1px;}
+.slot-group-label{font-size:11px;color:var(--muted);margin:10px 0 6px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;}
+
+.palette{display:grid;grid-template-columns:repeat(13,1fr);gap:4px;margin-top:10px;}
+.palette-card{
+  font-family:var(--mono);font-size:11.5px;font-weight:700;padding:6px 0;border-radius:5px;
+  border:1px solid var(--border);background:var(--panel2);text-align:center;
+}
+.palette-card.red{color:#e5484d;}
+.palette-card.black{color:var(--text);}
+.palette-card:disabled{opacity:.15;cursor:not-allowed;}
+.palette-suit-row{display:contents;}
+
+.mode-switch{display:flex;gap:6px;margin-bottom:12px;}
+.mode-switch button{flex:1;}
+
+.equity-result{display:flex;gap:14px;margin-top:16px;flex-wrap:wrap;}
+.eq-box{flex:1;min-width:120px;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;text-align:center;}
+.eq-box .num{font-family:var(--mono);font-weight:800;font-size:26px;}
+.eq-box .lbl{font-size:11px;color:var(--muted);margin-top:4px;}
+.eq-win .num{color:var(--green);}
+.eq-tie .num{color:var(--muted);}
+.eq-lose .num{color:var(--red);}
+
+.progress-wrap{height:6px;background:var(--panel2);border-radius:3px;overflow:hidden;margin-top:10px;border:1px solid var(--border);display:none;}
+.progress-bar{height:100%;width:0%;background:var(--violet);transition:width .1s;}
+
+.field-row{display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap;}
+.field-row label{font-size:12px;color:var(--muted);min-width:120px;}
+.field-row input[type=number], .field-row select{
+  background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:6px;
+  padding:7px 9px;font-family:var(--mono);font-size:13px;width:120px;
+}
+.slider-row{display:flex;align-items:center;gap:10px;}
+.slider-row input[type=range]{flex:1;}
+.pct-badge{font-family:var(--mono);font-weight:700;color:var(--violet);min-width:48px;text-align:right;}
+
+/* ---------- preflop grid ---------- */
+.range-grid{display:grid;grid-template-columns:repeat(13,1fr);gap:2px;margin-top:14px;}
+.range-cell{
+  aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-family:var(--mono);
+  font-size:10px;border-radius:3px;background:#181c24;color:var(--muted2);font-weight:600;
+}
+.range-cell.pair{font-weight:800;}
+.range-cell.in-range{color:#04140c;}
+.range-legend{display:flex;gap:14px;margin-top:10px;font-size:11px;color:var(--muted);align-items:center;}
+.legend-swatch{width:12px;height:12px;border-radius:3px;display:inline-block;margin-right:5px;vertical-align:middle;}
+
+.preset-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+.preset-row button{flex:1;min-width:70px;}
+
+/* ---------- pot odds ---------- */
+.odds-output{margin-top:14px;padding:14px 16px;border-radius:9px;border:1px solid var(--border);background:var(--panel2);}
+.odds-output .big{font-family:var(--mono);font-weight:800;font-size:22px;}
+.odds-verdict{font-family:var(--mono);font-weight:800;font-size:20px;margin-top:8px;}
+.odds-verdict.CALL{color:var(--green);}
+.odds-verdict.FOLD{color:var(--red);}
+
+/* ---------- journal ---------- */
+.journal-form textarea{
+  width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);
+  border-radius:6px;padding:8px 10px;font-family:var(--sans);font-size:13px;min-height:60px;resize:vertical;
+}
+.journal-list{display:flex;flex-direction:column;gap:8px;margin-top:12px;max-height:520px;overflow-y:auto;}
+.journal-item{border:1px solid var(--border-soft);border-radius:8px;padding:10px 12px;font-size:12.5px;}
+.journal-item .meta{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:4px;}
+.journal-empty{font-size:12px;color:var(--muted2);padding:10px 4px;}
+
+.legend-note{font-size:11px;color:var(--muted2);margin-top:14px;line-height:1.6;}
+.key-hint{font-family:var(--mono);font-size:9.5px;color:var(--muted2);margin-left:6px;}
+kbd{font-family:var(--mono);background:var(--panel2);border:1px solid var(--border);border-radius:4px;padding:1px 6px;color:var(--text);font-size:10.5px;}
+.footnote{font-size:10.5px;color:var(--muted2);text-align:center;padding:14px 16px 24px;}
+
+@media (max-width:1000px){ .grid{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark">♠</div>
+    <div>
+      <div class="brand-name">EDGE // POKER STUDY TERMINAL</div>
+      <div class="brand-sub">cash NLHE · 6-max · 100bb · echitate & range-uri</div>
+    </div>
+  </div>
+  <div class="rta-note">⚠ Instrument de studiu între sesiuni / post-hand review. Nu-l folosi live, în timpul unei mâini — majoritatea platformelor interzic asta (RTA) și riști banul contului.</div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="equity">Echitate</button>
+  <button class="tab-btn" data-tab="ranges">Range-uri preflop</button>
+  <button class="tab-btn" data-tab="odds">Pot odds</button>
+  <button class="tab-btn" data-tab="journal">Jurnal mâini</button>
+</div>
+
+<!-- TAB: EQUITY -->
+<div class="tab-panel active" id="tab-equity">
+  <div class="grid">
+    <div>
+      <div class="panel">
+        <div class="panel-title">Mâna ta (hero)</div>
+        <div class="slots-row">
+          <div class="card-slot" data-slot="hero0">?</div>
+          <div class="card-slot" data-slot="hero1">?</div>
+        </div>
+
+        <div class="slot-group-label">Board (flop / turn / river)</div>
+        <div class="slots-row">
+          <div class="card-slot" data-slot="board0">?</div>
+          <div class="card-slot" data-slot="board1">?</div>
+          <div class="card-slot" data-slot="board2">?</div>
+          <div class="card-slot" data-slot="board3">?</div>
+          <div class="card-slot" data-slot="board4">?</div>
+        </div>
+
+        <div class="slot-group-label">Adversar</div>
+        <div class="mode-switch">
+          <button id="modeSpecific" class="active-toggle">Mână specifică</button>
+          <button id="modeRange">Range (%)</button>
+        </div>
+
+        <div id="villainSpecific">
+          <div class="slots-row">
+            <div class="card-slot" data-slot="villain0">?</div>
+            <div class="card-slot" data-slot="villain1">?</div>
+          </div>
+        </div>
+
+        <div id="villainRange" style="display:none;">
+          <div class="preset-row">
+            <button data-pct="10">Tight 10%</button>
+            <button data-pct="20">Standard 20%</button>
+            <button data-pct="35">Loose 35%</button>
+            <button data-pct="100">Orice mână</button>
+          </div>
+          <div class="slider-row">
+            <input type="range" id="villainPctSlider" min="1" max="100" value="20">
+            <span class="pct-badge" id="villainPctBadge">20%</span>
+          </div>
+        </div>
+
+        <div class="slot-group-label">Cărți disponibile</div>
+        <div class="palette" id="palette"></div>
+
+        <div class="field-row" style="margin-top:16px;">
+          <label>Nr. simulări</label>
+          <select id="trialCount">
+            <option value="5000">Rapid (5.000)</option>
+            <option value="12000" selected>Standard (12.000)</option>
+            <option value="35000">Precis (35.000)</option>
+          </select>
+          <button id="btnCalc" class="primary">Calculează echitate</button>
+          <button id="btnClearHand" class="ghost">Curăță mâna</button>
+        </div>
+        <div class="progress-wrap" id="progressWrap"><div class="progress-bar" id="progressBar"></div></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <div class="panel-title">Rezultat</div>
+        <div class="equity-result">
+          <div class="eq-box eq-win"><div class="num" id="eqWin">—</div><div class="lbl">win %</div></div>
+          <div class="eq-box eq-tie"><div class="num" id="eqTie">—</div><div class="lbl">tie %</div></div>
+          <div class="eq-box eq-lose"><div class="num" id="eqLose">—</div><div class="lbl">lose %</div></div>
+        </div>
+        <div class="eq-box" style="margin-top:12px;">
+          <div class="num" id="eqTotal" style="color:var(--violet);">—</div>
+          <div class="lbl">echitate totală (win + tie/2)</div>
+        </div>
+        <div class="legend-note">
+          Simulare Monte Carlo — rezultatul are o marjă de eroare mică (≈±0.3–0.6% la 12.000 simulări). Pentru mâini finalizate (river complet), rezultatul e exact.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: RANGES -->
+<div class="tab-panel" id="tab-ranges">
+  <div class="grid">
+    <div>
+      <div class="panel">
+        <div class="panel-title">Grilă 13×13</div>
+        <div id="rangeGrid" class="range-grid"></div>
+        <div class="range-legend">
+          <span><span class="legend-swatch" style="background:var(--violet);"></span>în range</span>
+          <span><span class="legend-swatch" style="background:#181c24;border:1px solid var(--border);"></span>fold</span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <div class="panel-title">Context</div>
+        <div class="mode-switch">
+          <button id="ctxOpen" class="active-toggle">Open (prima acțiune)</button>
+          <button id="ctxThreeBet">3-bet (după un open)</button>
+        </div>
+
+        <div class="slot-group-label">Poziție</div>
+        <div class="preset-row" id="positionButtons" style="flex-wrap:wrap;">
+          <button data-pos="UTG">UTG</button>
+          <button data-pos="HJ">HJ</button>
+          <button data-pos="CO">CO</button>
+          <button data-pos="BTN">BTN</button>
+          <button data-pos="SB">SB</button>
+        </div>
+
+        <div class="slot-group-label">Lățime range</div>
+        <div class="slider-row">
+          <input type="range" id="rangePctSlider" min="1" max="100" value="16">
+          <span class="pct-badge" id="rangePctBadge">16%</span>
+        </div>
+
+        <div class="legend-note">
+          Lățimile astea sunt aproximări general-acceptate pentru 100bb, 6-max, cash, fără limpers — nu output de solver exact (care variază după rake, adversari, stack real). Ordonarea mâinilor e calculată cu formula Chen (un scor public, nu ceva inventat de mine) — o poți vedea și ajusta manual din slider.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: POT ODDS -->
+<div class="tab-panel" id="tab-odds">
+  <div class="grid">
+    <div>
+      <div class="panel">
+        <div class="panel-title">Calculator pot odds</div>
+        <div class="field-row"><label>Pot curent (înainte de bet)</label><input type="number" id="potSize" value="100" min="0"></div>
+        <div class="field-row"><label>Miza de call</label><input type="number" id="betToCall" value="50" min="0"></div>
+        <div class="field-row"><label>Echitatea ta estimată (%)</label><input type="number" id="myEquity" value="35" min="0" max="100"></div>
+        <button id="btnComputeOdds" class="primary">Calculează</button>
+        <button id="btnPullEquity" class="ghost small">Adu echitatea din tab Echitate</button>
+
+        <div class="odds-output" id="oddsOutput" style="display:none;">
+          <div class="big" id="potOddsPct">—</div>
+          <div class="legend-note" style="margin-top:2px;">pot odds — procentul din pot final reprezentat de call-ul tău</div>
+          <div class="big" id="reqEquity" style="margin-top:10px;">—</div>
+          <div class="legend-note" style="margin-top:2px;">echitate minimă necesară ca un call să fie break-even</div>
+          <div class="odds-verdict" id="oddsVerdict"></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="panel">
+        <div class="panel-title">Cum se citește</div>
+        <div class="legend-note">
+          Pot odds = miza de call / (pot + miza de call + miza deja pusă de tine în stradă, dacă e cazul).<br><br>
+          Dacă echitatea ta estimată e mai mare decât echitatea minimă necesară, call-ul e +EV matematic (fără să ținem cont de implied odds — șansele de a câștiga mize suplimentare pe străzile următoare, care pot justifica un call chiar sub prag).<br><br>
+          Nu ține cont de fold equity dacă te gândești la raise, doar de decizia call vs fold pură.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: JOURNAL -->
+<div class="tab-panel" id="tab-journal">
+  <div class="grid">
+    <div>
+      <div class="panel journal-form">
+        <div class="panel-title">Mână nouă în jurnal</div>
+        <div class="field-row"><label>Poziție</label>
+          <select id="jPos">
+            <option>UTG</option><option>HJ</option><option>CO</option><option>BTN</option><option>SB</option><option>BB</option>
+          </select>
+        </div>
+        <div class="field-row"><label>Mâna ta</label><input type="text" id="jHand" placeholder="ex: AhKs" style="width:160px;"></div>
+        <div class="field-row"><label>Board</label><input type="text" id="jBoard" placeholder="ex: Ts7h2c" style="width:200px;"></div>
+        <div class="field-row"><label>Acțiune luată</label><input type="text" id="jAction" placeholder="ex: 3bet preflop, c-bet flop, fold turn" style="width:280px;"></div>
+        <label style="font-size:12px;color:var(--muted);">Notă / ce ai învățat</label>
+        <textarea id="jNote" placeholder="ex: 3bet-ul lui a fost prea des ca bluff aici, ar fi trebuit să dau call..."></textarea>
+        <button id="btnAddJournal" class="primary" style="margin-top:10px;">Salvează în jurnal</button>
+        <div class="legend-note">Jurnalul e ținut doar în memoria sesiunii curente — se pierde la refresh. Copiază periodic ce vrei să păstrezi.</div>
+      </div>
+    </div>
+    <div>
+      <div class="panel">
+        <div class="panel-title">Istoric</div>
+        <div class="journal-list" id="journalList">
+          <div class="journal-empty">Nicio mână salvată încă.</div>
+        </div>
+        <button id="btnClearJournal" class="ghost small" style="width:100%;margin-top:10px;">Golește jurnalul</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footnote">
+  Instrument de studiu, bazat pe simulare Monte Carlo și aproximări de range general-acceptate. Nu e un solver GTO exact. Nu folosi în timpul unei mâini live — verifică termenii platformei tale.
+</div>
+
+<script>
+(function(){
+  const RANKS = ['2','3','4','5','6','7','8','9','T','J','Q','K','A'];
+  const RANK_VAL = {}; RANKS.forEach((r,i)=>RANK_VAL[r]=i+2);
+  const SUITS = ['s','h','d','c'];
+  const SUIT_SYM = { s:'♠', h:'♥', d:'♦', c:'♣' };
+  const RED_SUITS = ['h','d'];
+
+  function labelRank(r){ return r==='T' ? '10' : r; }
+
+  // ---------- full deck ----------
+  const FULL_DECK = [];
+  RANKS.forEach(r=> SUITS.forEach(s=> FULL_DECK.push({rank:r, suit:s, val:RANK_VAL[r], code:r+s})) );
+
+  // ============================================================
+  // TABS
+  // ============================================================
+  document.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ============================================================
+  // EQUITY TAB
+  // ============================================================
+  const eqState = {
+    slots: { hero0:null, hero1:null, board0:null, board1:null, board2:null, board3:null, board4:null, villain0:null, villain1:null },
+    activeSlot: 'hero0',
+    villainMode: 'specific', // 'specific' | 'range'
+    villainPct: 20
+  };
+  const SLOT_ORDER = ['hero0','hero1','board0','board1','board2','board3','board4'];
+
+  function usedCodes(excludeSlot){
+    const codes = [];
+    Object.entries(eqState.slots).forEach(([k,v])=>{
+      if(v && k!==excludeSlot) codes.push(v.code);
+    });
+    return codes;
+  }
+
+  function renderPalette(){
+    const pal = document.getElementById('palette');
+    pal.innerHTML = '';
+    const used = usedCodes(null);
+    RANKS.slice().reverse().forEach(r=>{
+      SUITS.forEach(s=>{
+        const code = r+s;
+        const btn = document.createElement('button');
+        btn.className = 'palette-card ' + (RED_SUITS.includes(s) ? 'red' : 'black');
+        btn.textContent = labelRank(r) + SUIT_SYM[s];
+        btn.disabled = used.includes(code);
+        btn.addEventListener('click', ()=> assignCardToActiveSlot({rank:r, suit:s, val:RANK_VAL[r], code}));
+        pal.appendChild(btn);
+      });
+    });
+  }
+
+  function nextEmptySlot(fromKey){
+    const order = eqState.villainMode==='specific'
+      ? [...SLOT_ORDER, 'villain0','villain1']
+      : SLOT_ORDER;
+    let idx = order.indexOf(fromKey);
+    for(let i=idx+1;i<order.length;i++){
+      if(!eqState.slots[order[i]]) return order[i];
+    }
+    for(let i=0;i<order.length;i++){
+      if(!eqState.slots[order[i]]) return order[i];
+    }
+    return fromKey;
+  }
+
+  function assignCardToActiveSlot(card){
+    const slot = eqState.activeSlot;
+    eqState.slots[slot] = card;
+    eqState.activeSlot = nextEmptySlot(slot);
+    renderSlots();
+    renderPalette();
+  }
+
+  function renderSlots(){
+    document.querySelectorAll('.card-slot').forEach(el=>{
+      const key = el.dataset.slot;
+      const card = eqState.slots[key];
+      el.classList.toggle('active', key===eqState.activeSlot);
+      if(card){
+        el.classList.add('filled');
+        el.classList.toggle('red', RED_SUITS.includes(card.suit));
+        el.textContent = labelRank(card.rank) + SUIT_SYM[card.suit];
+      } else {
+        el.classList.remove('filled','red');
+        el.textContent = '?';
+      }
+    });
+  }
+
+  document.querySelectorAll('.card-slot').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const key = el.dataset.slot;
+      if(eqState.slots[key]){
+        eqState.slots[key] = null;
+      }
+      eqState.activeSlot = key;
+      renderSlots();
+      renderPalette();
+    });
+  });
+
+  document.getElementById('modeSpecific').addEventListener('click', ()=>{
+    eqState.villainMode = 'specific';
+    document.getElementById('modeSpecific').classList.add('active-toggle');
+    document.getElementById('modeRange').classList.remove('active-toggle');
+    document.getElementById('villainSpecific').style.display = '';
+    document.getElementById('villainRange').style.display = 'none';
+  });
+  document.getElementById('modeRange').addEventListener('click', ()=>{
+    eqState.villainMode = 'range';
+    document.getElementById('modeRange').classList.add('active-toggle');
+    document.getElementById('modeSpecific').classList.remove('active-toggle');
+    document.getElementById('villainSpecific').style.display = 'none';
+    document.getElementById('villainRange').style.display = '';
+    eqState.slots.villain0 = null; eqState.slots.villain1 = null;
+    renderSlots(); renderPalette();
+  });
+
+  document.querySelectorAll('#villainRange .preset-row button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      eqState.villainPct = Number(btn.dataset.pct);
+      document.getElementById('villainPctSlider').value = eqState.villainPct;
+      document.getElementById('villainPctBadge').textContent = eqState.villainPct + '%';
+    });
+  });
+  document.getElementById('villainPctSlider').addEventListener('input', (e)=>{
+    eqState.villainPct = Number(e.target.value);
+    document.getElementById('villainPctBadge').textContent = eqState.villainPct + '%';
+  });
+
+  document.getElementById('btnClearHand').addEventListener('click', ()=>{
+    Object.keys(eqState.slots).forEach(k=>eqState.slots[k]=null);
+    eqState.activeSlot = 'hero0';
+    renderSlots(); renderPalette();
+    ['eqWin','eqTie','eqLose','eqTotal'].forEach(id=>document.getElementById(id).textContent='—');
+  });
+
+  // ---------- Chen formula & 169-hand ranking ----------
+  function chenScoreType(hi, lo, suited, isPair){
+    let pts;
+    if(hi===14) pts=10; else if(hi===13) pts=8; else if(hi===12) pts=7; else if(hi===11) pts=6; else pts=hi/2;
+    if(isPair) pts = Math.max(pts*2, 5);
+    if(suited && !isPair) pts += 2;
+    if(!isPair){
+      const gap = hi-lo-1;
+      if(gap===1) pts-=1; else if(gap===2) pts-=2; else if(gap===3) pts-=4; else if(gap>=4) pts-=5;
+      if(gap<=1 && hi<=11) pts+=1; // straight potential bonus for connected low cards
+    }
+    return Math.ceil(pts*2)/2;
+  }
+
+  function buildRankedTypes(){
+    const types = [];
+    for(let hi=14; hi>=2; hi--){
+      for(let lo=hi; lo>=2; lo--){
+        if(hi===lo){
+          types.push({ type: rToChar(hi)+rToChar(hi), hi, lo, isPair:true, suited:false, combos:6, score: chenScoreType(hi,lo,false,true) });
+        } else {
+          types.push({ type: rToChar(hi)+rToChar(lo)+'s', hi, lo, isPair:false, suited:true, combos:4, score: chenScoreType(hi,lo,true,false) });
+          types.push({ type: rToChar(hi)+rToChar(lo)+'o', hi, lo, isPair:false, suited:false, combos:12, score: chenScoreType(hi,lo,false,false) });
+        }
+      }
+    }
+    types.sort((a,b)=> b.score - a.score || (b.hi+b.lo) - (a.hi+a.lo));
+    let cum = 0;
+    types.forEach(t=>{ cum += t.combos; t.cumCombos = cum; t.cumPct = cum/1326*100; });
+    return types;
+  }
+  function rToChar(v){ return RANKS[v-2]; }
+  const RANKED_TYPES = buildRankedTypes();
+
+  function getRangeTypesByPercent(pct){
+    return RANKED_TYPES.filter(t => t.cumPct <= pct || RANKED_TYPES.indexOf(t)===0).map(t=>t.type);
+  }
+
+  function typeCombos(typeStr, deadCodes){
+    // returns array of [cardA, cardB] concrete combos for a type string like 'AKs','AA','T9o', excluding dead cards
+    const isPair = typeStr.length===2;
+    const hiChar = typeStr[0], loChar = typeStr[1];
+    const suitedFlag = typeStr.length===3 ? typeStr[2] : null;
+    const hiVal = RANK_VAL[hiChar], loVal = RANK_VAL[loChar];
+    const combos = [];
+    if(isPair){
+      for(let i=0;i<SUITS.length;i++){
+        for(let j=i+1;j<SUITS.length;j++){
+          const a = {rank:hiChar, suit:SUITS[i], val:hiVal, code:hiChar+SUITS[i]};
+          const b = {rank:hiChar, suit:SUITS[j], val:hiVal, code:hiChar+SUITS[j]};
+          if(!deadCodes.includes(a.code) && !deadCodes.includes(b.code)) combos.push([a,b]);
+        }
+      }
+    } else if(suitedFlag==='s'){
+      SUITS.forEach(s=>{
+        const a = {rank:hiChar, suit:s, val:hiVal, code:hiChar+s};
+        const b = {rank:loChar, suit:s, val:loVal, code:loChar+s};
+        if(!deadCodes.includes(a.code) && !deadCodes.includes(b.code)) combos.push([a,b]);
+      });
+    } else {
+      SUITS.forEach(s1=> SUITS.forEach(s2=>{
+        if(s1===s2) return;
+        const a = {rank:hiChar, suit:s1, val:hiVal, code:hiChar+s1};
+        const b = {rank:loChar, suit:s2, val:loVal, code:loChar+s2};
+        if(!deadCodes.includes(a.code) && !deadCodes.includes(b.code)) combos.push([a,b]);
+      }));
+    }
+    return combos;
+  }
+
+  // ---------- hand evaluator ----------
+  function handRank5(cards){
+    const ranksSorted = cards.map(c=>c.val).sort((a,b)=>b-a);
+    const suits = cards.map(c=>c.suit);
+    const isFlush = suits.every(s=>s===suits[0]);
+    const uniq = [...new Set(ranksSorted)];
+    let isStraight=false, straightHigh=0;
+    if(uniq.length===5){
+      if(uniq[0]-uniq[4]===4){ isStraight=true; straightHigh=uniq[0]; }
+      else if(uniq[0]===14 && uniq[1]===5 && uniq[2]===4 && uniq[3]===3 && uniq[4]===2){ isStraight=true; straightHigh=5; }
+    }
+    const counts={};
+    ranksSorted.forEach(r=>counts[r]=(counts[r]||0)+1);
+    const groups = Object.entries(counts).map(([r,c])=>({r:Number(r),c})).sort((a,b)=> b.c-a.c || b.r-a.r);
+
+    if(isStraight && isFlush) return [8, straightHigh];
+    if(groups[0].c===4) return [7, groups[0].r, groups[1].r];
+    if(groups[0].c===3 && groups[1] && groups[1].c===2) return [6, groups[0].r, groups[1].r];
+    if(isFlush) return [5, ...ranksSorted];
+    if(isStraight) return [4, straightHigh];
+    if(groups[0].c===3) return [3, groups[0].r, ...groups.slice(1).map(g=>g.r)];
+    if(groups[0].c===2 && groups[1] && groups[1].c===2){
+      const pr=[groups[0].r,groups[1].r].sort((a,b)=>b-a);
+      return [2, pr[0], pr[1], groups[2].r];
+    }
+    if(groups[0].c===2) return [1, groups[0].r, ...groups.slice(1).map(g=>g.r)];
+    return [0, ...ranksSorted];
+  }
+  function compareScores(a,b){
+    const len=Math.max(a.length,b.length);
+    for(let i=0;i<len;i++){
+      const av=a[i]??-1, bv=b[i]??-1;
+      if(av>bv) return 1;
+      if(av<bv) return -1;
+    }
+    return 0;
+  }
+  const COMBO5_IDX = (()=>{
+    const res=[]; const idx=[0,1,2,3,4,5,6];
+    function rec(start,chosen){
+      if(chosen.length===5){ res.push(chosen.slice()); return; }
+      for(let i=start;i<idx.length;i++){ chosen.push(idx[i]); rec(i+1,chosen); chosen.pop(); }
+    }
+    rec(0,[]);
+    return res;
+  })();
+  function best7(cards7){
+    let best=null;
+    for(const comboIdx of COMBO5_IDX){
+      const hand5 = comboIdx.map(i=>cards7[i]);
+      const score = handRank5(hand5);
+      if(best===null || compareScores(score,best)>0) best=score;
+    }
+    return best;
+  }
+
+  function shuffleSample(arr, n){
+    const a = arr.slice();
+    for(let i=a.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i],a[j]] = [a[j],a[i]];
+    }
+    return a.slice(0, n);
+  }
+
+  // ---------- run equity simulation ----------
+  document.getElementById('btnCalc').addEventListener('click', runEquity);
+
+  function runEquity(){
+    const hero = [eqState.slots.hero0, eqState.slots.hero1];
+    if(!hero[0] || !hero[1]){ alert('Adaugă ambele cărți ale mâinii tale.'); return; }
+
+    const knownBoard = ['board0','board1','board2','board3','board4'].map(k=>eqState.slots[k]).filter(Boolean);
+    const deadCodes = [hero[0].code, hero[1].code, ...knownBoard.map(c=>c.code)];
+
+    let villainCombos = null; // array of [a,b] card pairs to sample from
+    if(eqState.villainMode==='specific'){
+      const v0 = eqState.slots.villain0, v1 = eqState.slots.villain1;
+      if(!v0 || !v1){ alert('Adaugă mâna adversarului sau comută pe modul Range.'); return; }
+      villainCombos = [[v0,v1]];
+      deadCodes.push(v0.code, v1.code);
+    } else {
+      const types = getRangeTypesByPercent(eqState.villainPct);
+      let pool = [];
+      types.forEach(t=>{ pool = pool.concat(typeCombos(t, deadCodes)); });
+      if(pool.length===0){ alert('Range-ul ales nu mai are combo-uri posibile (blocate de cărțile deja alese).'); return; }
+      villainCombos = pool;
+    }
+
+    const remainingDeck = FULL_DECK.filter(c=> !deadCodes.includes(c.code));
+    const neededBoard = 5 - knownBoard.length;
+    const trials = Number(document.getElementById('trialCount').value);
+
+    let wins=0, ties=0, losses=0, done=0;
+    const progressWrap = document.getElementById('progressWrap');
+    const progressBar = document.getElementById('progressBar');
+    progressWrap.style.display='block'; progressBar.style.width='0%';
+    document.getElementById('btnCalc').disabled = true;
+
+    const CHUNK = 1200;
+    function step(){
+      const end = Math.min(done+CHUNK, trials);
+      for(let t=done; t<end; t++){
+        const villainPair = villainCombos[Math.floor(Math.random()*villainCombos.length)];
+        const villainCodes = [villainPair[0].code, villainPair[1].code];
+        const deckForBoard = remainingDeck.filter(c=> !villainCodes.includes(c.code));
+        const extraBoard = neededBoard>0 ? shuffleSample(deckForBoard, neededBoard) : [];
+        const fullBoard = [...knownBoard, ...extraBoard];
+
+        const heroScore = best7([hero[0], hero[1], ...fullBoard]);
+        const villScore = best7([villainPair[0], villainPair[1], ...fullBoard]);
+        const cmp = compareScores(heroScore, villScore);
+        if(cmp>0) wins++; else if(cmp<0) losses++; else ties++;
+      }
+      done = end;
+      progressBar.style.width = (done/trials*100).toFixed(0)+'%';
+      if(done<trials){
+        setTimeout(step, 0);
+      } else {
+        progressWrap.style.display='none';
+        document.getElementById('btnCalc').disabled = false;
+        const winPct = wins/trials*100, tiePct = ties/trials*100, losePct = losses/trials*100;
+        document.getElementById('eqWin').textContent = winPct.toFixed(1)+'%';
+        document.getElementById('eqTie').textContent = tiePct.toFixed(1)+'%';
+        document.getElementById('eqLose').textContent = losePct.toFixed(1)+'%';
+        const total = winPct + tiePct/2;
+        document.getElementById('eqTotal').textContent = total.toFixed(1)+'%';
+        lastEquityResult = total;
+      }
+    }
+    step();
+  }
+  let lastEquityResult = null;
+
+  renderSlots(); renderPalette();
+
+  // ============================================================
+  // RANGES TAB
+  // ============================================================
+  const rangeState = { context:'open', position:'UTG', pct:16 };
+  const OPEN_WIDTHS = { UTG:16, HJ:19, CO:26, BTN:45, SB:38 };
+  const THREEBET_WIDTHS = { UTG:6, HJ:7, CO:8, BTN:11, SB:9 };
+
+  function renderRangeGrid(){
+    const grid = document.getElementById('rangeGrid');
+    grid.innerHTML = '';
+    const included = new Set(getRangeTypesByPercent(rangeState.pct));
+    for(let i=0;i<13;i++){ // row: hi card, RANKS reversed order desired (A first)
+      const hiChar = RANKS[12-i];
+      for(let j=0;j<13;j++){
+        const loChar = RANKS[12-j];
+        let type, isPair=false;
+        if(i===j){ type = hiChar+hiChar; isPair=true; }
+        else if(i<j){ type = hiChar+loChar+'s'; }
+        else { type = loChar+hiChar+'o'; }
+        const cell = document.createElement('div');
+        cell.className = 'range-cell' + (isPair?' pair':'');
+        cell.textContent = type;
+        if(included.has(type)){
+          cell.classList.add('in-range');
+          cell.style.background = 'var(--violet)';
+        }
+        grid.appendChild(cell);
+      }
+    }
+  }
+
+  document.getElementById('ctxOpen').addEventListener('click', ()=>{
+    rangeState.context='open';
+    document.getElementById('ctxOpen').classList.add('active-toggle');
+    document.getElementById('ctxThreeBet').classList.remove('active-toggle');
+    applyPositionPreset();
+  });
+  document.getElementById('ctxThreeBet').addEventListener('click', ()=>{
+    rangeState.context='3bet';
+    document.getElementById('ctxThreeBet').classList.add('active-toggle');
+    document.getElementById('ctxOpen').classList.remove('active-toggle');
+    applyPositionPreset();
+  });
+
+  document.querySelectorAll('#positionButtons button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('#positionButtons button').forEach(b=>b.classList.remove('active-toggle'));
+      btn.classList.add('active-toggle');
+      rangeState.position = btn.dataset.pos;
+      applyPositionPreset();
+    });
+  });
+
+  function applyPositionPreset(){
+    const table = rangeState.context==='open' ? OPEN_WIDTHS : THREEBET_WIDTHS;
+    rangeState.pct = table[rangeState.position];
+    document.getElementById('rangePctSlider').value = rangeState.pct;
+    document.getElementById('rangePctBadge').textContent = rangeState.pct+'%';
+    renderRangeGrid();
+  }
+
+  document.getElementById('rangePctSlider').addEventListener('input', (e)=>{
+    rangeState.pct = Number(e.target.value);
+    document.getElementById('rangePctBadge').textContent = rangeState.pct+'%';
+    renderRangeGrid();
+  });
+
+  document.querySelector('#positionButtons button[data-pos="UTG"]').classList.add('active-toggle');
+  renderRangeGrid();
+
+  // ============================================================
+  // POT ODDS TAB
+  // ============================================================
+  document.getElementById('btnComputeOdds').addEventListener('click', ()=>{
+    const pot = Number(document.getElementById('potSize').value);
+    const bet = Number(document.getElementById('betToCall').value);
+    const eq = Number(document.getElementById('myEquity').value);
+    if(bet<=0){ alert('Miza de call trebuie să fie mai mare ca 0.'); return; }
+    const potOdds = bet/(pot+bet)*100;
+    const out = document.getElementById('oddsOutput');
+    out.style.display='block';
+    document.getElementById('potOddsPct').textContent = potOdds.toFixed(1)+'%';
+    document.getElementById('reqEquity').textContent = potOdds.toFixed(1)+'%';
+    const verdict = document.getElementById('oddsVerdict');
+    if(eq >= potOdds){
+      verdict.textContent = 'CALL (echitatea ta depășește pragul)';
+      verdict.className = 'odds-verdict CALL';
+    } else {
+      verdict.textContent = 'FOLD (sub prag, fără implied odds)';
+      verdict.className = 'odds-verdict FOLD';
+    }
+  });
+
+  document.getElementById('btnPullEquity').addEventListener('click', ()=>{
+    if(lastEquityResult==null){ alert('Calculează întâi o echitate în tab-ul Echitate.'); return; }
+    document.getElementById('myEquity').value = lastEquityResult.toFixed(1);
+  });
+
+  // ============================================================
+  // JOURNAL TAB
+  // ============================================================
+  const journal = [];
+  document.getElementById('btnAddJournal').addEventListener('click', ()=>{
+    const pos = document.getElementById('jPos').value;
+    const hand = document.getElementById('jHand').value.trim();
+    const board = document.getElementById('jBoard').value.trim();
+    const action = document.getElementById('jAction').value.trim();
+    const note = document.getElementById('jNote').value.trim();
+    if(!hand){ alert('Introdu măcar mâna ta.'); return; }
+    journal.unshift({ pos, hand, board, action, note, ts: new Date().toLocaleString('ro-RO') });
+    ['jHand','jBoard','jAction','jNote'].forEach(id=>document.getElementById(id).value='');
+    renderJournal();
+  });
+  document.getElementById('btnClearJournal').addEventListener('click', ()=>{
+    if(!confirm('Golești tot jurnalul?')) return;
+    journal.length = 0;
+    renderJournal();
+  });
+  function renderJournal(){
+    const list = document.getElementById('journalList');
+    if(journal.length===0){ list.innerHTML = '<div class="journal-empty">Nicio mână salvată încă.</div>'; return; }
+    list.innerHTML = journal.map(j=>`
+      <div class="journal-item">
+        <div class="meta">${j.ts} · ${j.pos} · ${j.hand}${j.board? ' · board '+j.board : ''}</div>
+        ${j.action? '<div><b>Acțiune:</b> '+j.action+'</div>' : ''}
+        ${j.note? '<div style="margin-top:4px;color:var(--muted);">'+j.note+'</div>' : ''}
+      </div>
+    `).join('');
+  }
+
+})();
+</script>
+</body>
+</html>
