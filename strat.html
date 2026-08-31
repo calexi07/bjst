@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<title>Edge // Blackjack Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0c10;
+  --panel:#12151b;
+  --panel2:#171b22;
+  --border:#232830;
+  --border-soft:#1b1f27;
+  --text:#e8eaed;
+  --muted:#8b93a1;
+  --muted2:#5b6472;
+  --green:#34c77b;
+  --green-dim:#1d5c3e;
+  --red:#e5484d;
+  --red-dim:#5c2528;
+  --amber:#f5a623;
+  --blue:#5b8def;
+  --violet:#8b7cf6;
+  --mono:'JetBrains Mono',ui-monospace,'SF Mono',monospace;
+  --sans:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--sans);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--amber);color:#0a0c10;}
+
+/* ---------- header ---------- */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 22px;border-bottom:1px solid var(--border);
+  background:linear-gradient(180deg,#0d1015,#0a0c10);
+}
+.brand{display:flex;align-items:center;gap:12px;}
+.brand-mark{
+  width:30px;height:30px;border-radius:6px;
+  background:linear-gradient(135deg,var(--green),#1c8a56);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-weight:700;font-size:14px;color:#04140c;
+}
+.brand-name{font-weight:700;font-size:15px;letter-spacing:.02em;}
+.brand-sub{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.04em;}
+.ruleset-badge{
+  font-family:var(--mono);font-size:11px;color:var(--muted);
+  display:flex;gap:8px;flex-wrap:wrap;
+}
+.ruleset-badge span{
+  border:1px solid var(--border);padding:3px 8px;border-radius:4px;background:var(--panel);
+}
+.topbar-actions{display:flex;gap:10px;}
+
+/* ---------- layout ---------- */
+.grid{
+  display:grid;
+  grid-template-columns:290px 1fr 320px;
+  gap:16px;
+  padding:16px;
+  align-items:start;
+}
+.panel{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:16px;
+}
+.panel + .panel{margin-top:16px;}
+.panel-title{
+  font-family:var(--mono);font-size:11px;letter-spacing:.09em;color:var(--muted);
+  text-transform:uppercase;margin:0 0 12px 0;display:flex;justify-content:space-between;align-items:center;
+}
+
+/* ---------- buttons ---------- */
+button{
+  font-family:var(--sans);cursor:pointer;border-radius:7px;
+  border:1px solid var(--border);background:var(--panel2);color:var(--text);
+  padding:8px 12px;font-size:13px;font-weight:500;transition:.12s border-color,.12s background;
+}
+button:hover{border-color:var(--muted2);}
+button:active{transform:translateY(1px);}
+button.primary{background:var(--green);color:#04140c;border-color:var(--green);font-weight:700;}
+button.primary:hover{background:#3fd98a;}
+button.ghost{background:transparent;}
+button.danger{color:var(--red);}
+button.small{padding:5px 9px;font-size:12px;}
+button:disabled{opacity:.35;cursor:not-allowed;}
+button.toggle-on{background:var(--green-dim);border-color:var(--green);color:var(--green);}
+
+/* ---------- count panel ---------- */
+.count-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;}
+.count-label{font-size:12px;color:var(--muted);}
+.count-value{font-family:var(--mono);font-size:26px;font-weight:700;}
+.count-value.small{font-size:16px;}
+.pos{color:var(--green);}
+.neg{color:var(--red);}
+.neu{color:var(--text);}
+
+.shoe-wrap{margin:14px 0 16px 0;}
+.shoe-bar{
+  position:relative;height:34px;border-radius:6px;overflow:hidden;
+  background:repeating-linear-gradient(90deg,var(--panel2) 0,var(--panel2) calc(12.5% - 2px),var(--border) calc(12.5% - 2px),var(--border) 12.5%);
+  border:1px solid var(--border);
+}
+.shoe-fill{
+  position:absolute;top:0;left:0;bottom:0;
+  background:linear-gradient(90deg,#1d3a2c,var(--green-dim));
+  transition:width .25s ease;
+}
+.shoe-needle{
+  position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--amber);
+  box-shadow:0 0 6px var(--amber);
+}
+.shoe-caption{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:5px;}
+
+.stat-line{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);padding:5px 0;border-bottom:1px dashed var(--border-soft);}
+.stat-line b{color:var(--text);font-family:var(--mono);font-weight:600;}
+.stat-line:last-child{border-bottom:none;}
+
+.edge-box{
+  margin-top:12px;padding:10px 12px;border-radius:7px;background:var(--panel2);border:1px solid var(--border);
+}
+.edge-box .val{font-family:var(--mono);font-size:20px;font-weight:700;}
+.edge-box .cap{font-size:11px;color:var(--muted);margin-top:2px;}
+
+.toggle-row{display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:12px;border-top:1px solid var(--border-soft);}
+.toggle-row label{font-size:12px;color:var(--muted);}
+
+/* ---------- center: card pad & hands ---------- */
+.target-switch{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+.target-switch button{flex:1;min-width:90px;}
+.target-switch button.active{background:var(--blue);border-color:var(--blue);color:#06101f;font-weight:700;}
+
+.pad{
+  display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:16px;
+}
+.pad button{
+  font-family:var(--mono);font-weight:700;font-size:16px;padding:14px 0;background:var(--panel2);
+}
+.pad button.ace{border-color:var(--amber);color:var(--amber);}
+
+.table-area{
+  display:grid;grid-template-columns:1fr;gap:14px;
+}
+.dealer-row,.hand-row{
+  border:1px solid var(--border);border-radius:8px;padding:12px 14px;background:var(--panel2);
+}
+.hand-row.active{border-color:var(--blue);}
+.row-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.row-title{font-size:12px;color:var(--muted);font-family:var(--mono);letter-spacing:.04em;text-transform:uppercase;}
+.cards-line{display:flex;gap:6px;flex-wrap:wrap;min-height:28px;align-items:center;}
+.card-chip{
+  font-family:var(--mono);font-size:13px;font-weight:700;
+  background:var(--panel);border:1px solid var(--border);border-radius:5px;padding:4px 8px;
+}
+.total-chip{font-family:var(--mono);font-size:13px;color:var(--muted);margin-left:auto;}
+
+.reco{
+  margin-top:16px;border-radius:9px;padding:16px 18px;border:1px solid var(--border);
+  background:var(--panel2);display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+}
+.reco-action{
+  font-family:var(--mono);font-weight:800;font-size:28px;letter-spacing:.03em;
+}
+.reco-action.HIT{color:var(--blue);}
+.reco-action.STAND{color:var(--green);}
+.reco-action.DOUBLE{color:var(--amber);}
+.reco-action.SPLIT{color:var(--violet);}
+.reco-action.INSURANCE-DA{color:var(--amber);}
+.reco-action.INSURANCE-NU{color:var(--muted);}
+.reco-sub{font-size:12.5px;color:var(--muted);max-width:420px;}
+.reco-dev{
+  font-family:var(--mono);font-size:11px;color:var(--amber);margin-top:5px;display:block;
+}
+.hand-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+
+.controls-row{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+
+.legend{font-size:11px;color:var(--muted2);margin-top:14px;line-height:1.6;}
+.legend b{color:var(--muted);}
+
+/* ---------- right: stats ---------- */
+.session-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.session-cell{background:var(--panel2);border:1px solid var(--border);border-radius:7px;padding:10px 12px;}
+.session-cell .num{font-family:var(--mono);font-size:20px;font-weight:700;}
+.session-cell .lbl{font-size:11px;color:var(--muted);margin-top:2px;}
+
+.history{max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;}
+.hist-item{
+  font-family:var(--mono);font-size:11px;color:var(--muted);
+  border:1px solid var(--border-soft);border-radius:6px;padding:7px 9px;display:flex;justify-content:space-between;gap:8px;
+}
+.hist-item .r-win{color:var(--green);}
+.hist-item .r-loss{color:var(--red);}
+.hist-item .r-push{color:var(--muted);}
+.hist-empty{font-size:12px;color:var(--muted2);padding:10px 4px;}
+
+.outcome-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+.outcome-row button{flex:1;min-width:70px;font-size:11.5px;padding:6px 4px;}
+
+.footnote{font-size:10.5px;color:var(--muted2);text-align:center;padding:10px 16px 20px;}
+
+@media (max-width:1100px){
+  .grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark">21</div>
+    <div>
+      <div class="brand-name">EDGE // BLACKJACK TERMINAL</div>
+      <div class="brand-sub">strategy · hi-lo count · sesiune live</div>
+    </div>
+  </div>
+  <div class="ruleset-badge">
+    <span>8 pachete</span><span>Dealer stă pe 17</span><span>No DAS</span><span>Split unic</span><span>BJ 3:2</span>
+  </div>
+  <div class="topbar-actions">
+    <button id="btnNewHand">Mână nouă</button>
+    <button id="btnNewShoe" class="danger">Amestecare (shoe nou)</button>
+  </div>
+</div>
+
+<div class="grid">
+
+  <!-- LEFT: COUNT -->
+  <div>
+    <div class="panel">
+      <div class="panel-title">Numărătoare</div>
+      <div class="count-row">
+        <span class="count-label">Running count</span>
+        <span class="count-value" id="runningCount">0</span>
+      </div>
+      <div class="count-row">
+        <span class="count-label">True count</span>
+        <span class="count-value" id="trueCount">0.0</span>
+      </div>
+
+      <div class="shoe-wrap">
+        <div class="shoe-bar">
+          <div class="shoe-fill" id="shoeFill" style="width:0%"></div>
+          <div class="shoe-needle" id="shoeNeedle" style="left:0%"></div>
+        </div>
+        <div class="shoe-caption">
+          <span id="cardsSeenCap">0 / 416 cărți văzute</span>
+          <span id="decksLeftCap">8.0 pachete rămase</span>
+        </div>
+      </div>
+
+      <div class="stat-line"><span>Penetrare shoe</span><b id="penetration">0%</b></div>
+      <div class="stat-line"><span>Cărți mici (2–6) văzute</span><b id="lowSeen">0</b></div>
+      <div class="stat-line"><span>Cărți mari (10/A) văzute</span><b id="highSeen">0</b></div>
+
+      <div class="edge-box">
+        <div class="val" id="edgeEstimate">−0.60%</div>
+        <div class="cap">avantaj estimat (aprox., pe baza true count)</div>
+      </div>
+      <div class="edge-box">
+        <div class="val" id="betSpread">1 unitate</div>
+        <div class="cap">miză sugerată (ramp simplu pe TC)</div>
+      </div>
+
+      <div class="toggle-row">
+        <label>Devieri pe count (index plays)</label>
+        <button id="btnDeviations" class="toggle-on small">ON</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENTER: TABLE -->
+  <div>
+    <div class="panel">
+      <div class="panel-title">Adaugă o carte — la cine?</div>
+      <div class="target-switch">
+        <button data-target="dealer" class="active">Crupier</button>
+        <button data-target="p1">Mâna mea</button>
+        <button data-target="p2">Mâna 2 (split)</button>
+        <button data-target="other">Alt jucător (doar count)</button>
+      </div>
+
+      <div class="pad">
+        <button data-rank="2">2</button>
+        <button data-rank="3">3</button>
+        <button data-rank="4">4</button>
+        <button data-rank="5">5</button>
+        <button data-rank="6">6</button>
+        <button data-rank="7">7</button>
+        <button data-rank="8">8</button>
+        <button data-rank="9">9</button>
+        <button data-rank="10">10</button>
+        <button data-rank="J">J</button>
+        <button data-rank="Q">Q</button>
+        <button data-rank="K">K</button>
+        <button data-rank="A" class="ace" style="grid-column:span 2;">A</button>
+      </div>
+      <div class="controls-row">
+        <button id="btnUndo">↩ Anulează ultima carte</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Masa</div>
+      <div class="table-area">
+        <div class="dealer-row">
+          <div class="row-head">
+            <span class="row-title">Crupier</span>
+          </div>
+          <div class="cards-line" id="dealerCards"></div>
+        </div>
+
+        <div class="hand-row active" id="handRow0">
+          <div class="row-head">
+            <span class="row-title">Mâna mea</span>
+            <span class="total-chip" id="handTotal0">—</span>
+          </div>
+          <div class="cards-line" id="handCards0"></div>
+        </div>
+
+        <div class="hand-row" id="handRow1" style="display:none;">
+          <div class="row-head">
+            <span class="row-title">Mâna 2 (din split)</span>
+            <span class="total-chip" id="handTotal1">—</span>
+          </div>
+          <div class="cards-line" id="handCards1"></div>
+        </div>
+      </div>
+
+      <div class="reco" id="recoBox">
+        <div>
+          <div class="reco-action" id="recoAction">—</div>
+          <div class="reco-sub" id="recoSub">Introdu cartea crupierului și prima ta mână ca să vezi recomandarea.</div>
+          <span class="reco-dev" id="recoDev" style="display:none;"></span>
+        </div>
+        <div class="hand-actions" id="handActions">
+          <button id="btnSplit" disabled>Split</button>
+          <label style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;">
+            <input type="checkbox" id="chkDoubled"> am dublat mâna curentă
+          </label>
+        </div>
+      </div>
+
+      <div class="legend">
+        <b>H</b> Hit &nbsp;·&nbsp; <b>S</b> Stand &nbsp;·&nbsp; <b>D</b> Double &nbsp;·&nbsp; <b>P</b> Split &nbsp;·&nbsp;
+        Strategia de bază e calculată exact pe regulile Superbet (8D, S17, no DAS, split unic, fără surrender).
+        Devierile pe count sunt un set redus, adaptat (fără mutări de surrender, care nu există aici) — tratează-le ca informativ, nu ca literă de lege.
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: STATS -->
+  <div>
+    <div class="panel">
+      <div class="panel-title">Sesiune</div>
+      <div class="session-grid">
+        <div class="session-cell"><div class="num" id="statHands">0</div><div class="lbl">mâini</div></div>
+        <div class="session-cell"><div class="num" id="statWinRate">—</div><div class="lbl">win rate</div></div>
+        <div class="session-cell"><div class="num pos" id="statWins">0</div><div class="lbl">câștiguri</div></div>
+        <div class="session-cell"><div class="num neg" id="statLosses">0</div><div class="lbl">pierderi</div></div>
+        <div class="session-cell"><div class="num" id="statPushes">0</div><div class="lbl">push</div></div>
+        <div class="session-cell"><div class="num" id="statUnits">0.0</div><div class="lbl">unități net</div></div>
+      </div>
+      <button id="btnResetStats" class="ghost small" style="width:100%;">Resetează statisticile</button>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Rezultat mâna curentă (Mâna mea)</div>
+      <div class="outcome-row">
+        <button class="primary" data-outcome="win">Câștig</button>
+        <button data-outcome="blackjack">Blackjack</button>
+        <button data-outcome="push">Push</button>
+        <button class="danger" data-outcome="loss">Pierdere</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted2);margin-top:8px;">
+        Loghează rezultatul pe baza mizei (dublată sau nu). Nu șterge mâinile automat — apasă „Mână nouă" după.
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Istoric mâini</div>
+      <div class="history" id="historyList">
+        <div class="hist-empty">Niciun rezultat logat încă.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footnote">
+  Instrument informativ, bazat pe basic strategy matematică și hi-lo count. Nu garantează câștiguri — jocurile de noroc implică risc financiar. Joacă responsabil.
+</div>
+
+<script>
+(function(){
+  const TOTAL_CARDS = 8*52;
+
+  const state = {
+    seenCount: 0,
+    runningCount: 0,
+    deviationsOn: true,
+    target: 'dealer',
+    dealer: { cards: [] },
+    hands: [ makeHand() ],
+    activeHandIndex: 0,
+    undoStack: [],
+    stats: { hands:0, wins:0, losses:0, pushes:0, units:0 },
+    history: []
+  };
+
+  function makeHand(){ return { cards: [], fromSplit:false, fromSplitAces:false, doubled:false }; }
+
+  // ---------- card helpers ----------
+  function cardValue(rank){
+    if(rank==='J'||rank==='Q'||rank==='K') return 10;
+    if(rank==='A') return 11;
+    return Number(rank);
+  }
+  function hiLoValue(rank){
+    const v = cardValue(rank);
+    if(rank==='A') return -1;
+    if(v>=2 && v<=6) return 1;
+    if(v>=7 && v<=9) return 0;
+    return -1; // 10-value
+  }
+  function dealerCategory(rank){
+    if(rank==null) return null;
+    const v = cardValue(rank);
+    if(rank==='A') return 'A';
+    if(v===10) return '10';
+    return String(v);
+  }
+  function handTotal(cards){
+    let total=0, aces=0;
+    cards.forEach(r=>{ const v=cardValue(r); total+=v; if(r==='A') aces++; });
+    let softAcesLeft = aces;
+    while(total>21 && softAcesLeft>0){ total-=10; softAcesLeft--; }
+    const soft = softAcesLeft>0;
+    return { total, soft };
+  }
+  function isPair(cards){
+    return cards.length===2 && cardValue(cards[0])===cardValue(cards[1]);
+  }
+
+  // ---------- basic strategy ----------
+  function pairAction(rankValue, dCat){
+    const inCats = arr => arr.includes(dCat);
+    if(rankValue===11) return 'P';               // AA always split
+    if(rankValue===10) return 'S';                // never split tens
+    if(rankValue===9)  return inCats(['2','3','4','5','6','8','9']) ? 'P' : 'S';
+    if(rankValue===8)  return 'P';                 // always split 8s
+    if(rankValue===7)  return inCats(['2','3','4','5','6','7']) ? 'P' : null;
+    if(rankValue===6)  return inCats(['3','4','5','6']) ? 'P' : null;             // no DAS: not vs 2
+    if(rankValue===5)  return null;                 // treat as hard 10
+    if(rankValue===4)  return null;                 // no DAS: never split 4s
+    if(rankValue===3)  return inCats(['4','5','6','7']) ? 'P' : null;
+    if(rankValue===2)  return inCats(['4','5','6','7']) ? 'P' : null;
+    return null;
+  }
+
+  function hardAction(total, dCat, canDouble){
+    const inCats = arr => arr.includes(dCat);
+    if(total<=8) return 'H';
+    if(total===9)  return inCats(['3','4','5','6']) ? (canDouble?'D':'H') : 'H';
+    if(total===10) return inCats(['2','3','4','5','6','7','8','9']) ? (canDouble?'D':'H') : 'H';
+    if(total===11) return inCats(['2','3','4','5','6','7','8','9','10']) ? (canDouble?'D':'H') : 'H';
+    if(total===12) return inCats(['4','5','6']) ? 'S' : 'H';
+    if(total>=13 && total<=16) return inCats(['2','3','4','5','6']) ? 'S' : 'H';
+    return 'S';
+  }
+
+  function softAction(total, dCat, canDouble){
+    const inCats = arr => arr.includes(dCat);
+    if(total===13 || total===14) return inCats(['5','6']) ? (canDouble?'D':'H') : 'H';
+    if(total===15 || total===16) return inCats(['4','5','6']) ? (canDouble?'D':'H') : 'H';
+    if(total===17) return inCats(['3','4','5','6']) ? (canDouble?'D':'H') : 'H';
+    if(total===18){
+      if(inCats(['3','4','5','6'])) return canDouble?'D':'S';
+      if(inCats(['2','7','8'])) return 'S';
+      return 'H';
+    }
+    return 'S'; // soft 19, 20, 21
+  }
+
+  // index-play deviations (hi-lo, adapted — no surrender in this ruleset)
+  const DEVIATIONS = [
+    { match:(h,dCat)=> !h.soft && h.total===16 && dCat==='10', tc:0,  to:'S', label:'16 vs 10: Stand la TC ≥ 0' },
+    { match:(h,dCat)=> !h.soft && h.total===15 && dCat==='10', tc:4,  to:'S', label:'15 vs 10: Stand la TC ≥ +4' },
+    { match:(h,dCat)=> !h.soft && h.total===10 && dCat==='10', tc:4,  to:'D', label:'10 vs 10: Double la TC ≥ +4' },
+    { match:(h,dCat)=> !h.soft && h.total===12 && dCat==='3',  tc:2,  to:'S', label:'12 vs 3: Stand la TC ≥ +2' },
+    { match:(h,dCat)=> !h.soft && h.total===12 && dCat==='2',  tc:3,  to:'S', label:'12 vs 2: Stand la TC ≥ +3' },
+    { match:(h,dCat)=> !h.soft && h.total===11 && dCat==='A',  tc:1,  to:'D', label:'11 vs A: Double la TC ≥ +1' },
+    { match:(h,dCat)=> !h.soft && h.total===9  && dCat==='2',  tc:1,  to:'D', label:'9 vs 2: Double la TC ≥ +1' },
+    { match:(h,dCat)=> !h.soft && h.total===10 && dCat==='A',  tc:4,  to:'D', label:'10 vs A: Double la TC ≥ +4' },
+    { match:(h,dCat)=> !h.soft && h.total===9  && dCat==='7',  tc:3,  to:'D', label:'9 vs 7: Double la TC ≥ +3' },
+    { match:(h,dCat)=> !h.soft && h.total===16 && dCat==='9',  tc:5,  to:'S', label:'16 vs 9: Stand la TC ≥ +5' },
+    { match:(h,dCat)=> !h.soft && h.total===12 && dCat==='5',  tc:-2, to:'H', label:'12 vs 5: Hit la TC ≤ −2', neg:true },
+    { match:(h,dCat)=> !h.soft && h.total===12 && dCat==='6',  tc:-1, to:'H', label:'12 vs 6: Hit la TC ≤ −1', neg:true },
+  ];
+
+  function getRecommendation(hand, dCatRaw, trueCount, canSplit, canDouble){
+    const dCat = dCatRaw;
+    if(dCat==null) return { action:null, label:'Introdu cartea crupierului', dev:null };
+    const cards = hand.cards;
+    if(cards.length===0) return { action:null, label:'Adaugă cărți în mână', dev:null };
+
+    // pair check
+    if(cards.length===2 && isPair(cards) && canSplit){
+      const rv = cardValue(cards[0]);
+      const pact = pairAction(rv, dCat);
+      if(pact){ return { action:pact, label:null, dev:null }; }
+    }
+
+    const { total, soft } = handTotal(cards);
+    let action = soft ? softAction(total, dCat, canDouble) : hardAction(total, dCat, canDouble);
+
+    let dev = null;
+    if(state.deviationsOn && cards.length===2){
+      for(const d of DEVIATIONS){
+        if(d.match({total, soft}, dCat)){
+          const qualifies = d.neg ? trueCount<=d.tc : trueCount>=d.tc;
+          if(qualifies && action!==d.to && (d.to!=='D' || canDouble)){
+            action = d.to;
+            dev = d.label;
+          }
+          break;
+        }
+      }
+    }
+    return { action, label:null, dev, total, soft };
+  }
+
+  // ---------- rendering ----------
+  const els = {
+    runningCount: document.getElementById('runningCount'),
+    trueCount: document.getElementById('trueCount'),
+    shoeFill: document.getElementById('shoeFill'),
+    shoeNeedle: document.getElementById('shoeNeedle'),
+    cardsSeenCap: document.getElementById('cardsSeenCap'),
+    decksLeftCap: document.getElementById('decksLeftCap'),
+    penetration: document.getElementById('penetration'),
+    lowSeen: document.getElementById('lowSeen'),
+    highSeen: document.getElementById('highSeen'),
+    edgeEstimate: document.getElementById('edgeEstimate'),
+    betSpread: document.getElementById('betSpread'),
+    dealerCards: document.getElementById('dealerCards'),
+    handCards0: document.getElementById('handCards0'),
+    handCards1: document.getElementById('handCards1'),
+    handTotal0: document.getElementById('handTotal0'),
+    handTotal1: document.getElementById('handTotal1'),
+    handRow1: document.getElementById('handRow1'),
+    recoAction: document.getElementById('recoAction'),
+    recoSub: document.getElementById('recoSub'),
+    recoDev: document.getElementById('recoDev'),
+    btnSplit: document.getElementById('btnSplit'),
+    chkDoubled: document.getElementById('chkDoubled'),
+    statHands: document.getElementById('statHands'),
+    statWinRate: document.getElementById('statWinRate'),
+    statWins: document.getElementById('statWins'),
+    statLosses: document.getElementById('statLosses'),
+    statPushes: document.getElementById('statPushes'),
+    statUnits: document.getElementById('statUnits'),
+    historyList: document.getElementById('historyList'),
+  };
+
+  function decksRemaining(){ return Math.max((TOTAL_CARDS - state.seenCount)/52, 0.25); }
+  function trueCountVal(){ return state.runningCount / decksRemaining(); }
+
+  function render(){
+    // count panel
+    els.runningCount.textContent = (state.runningCount>0?'+':'') + state.runningCount;
+    els.runningCount.className = 'count-value ' + (state.runningCount>0?'pos':state.runningCount<0?'neg':'neu');
+    const tc = trueCountVal();
+    els.trueCount.textContent = (tc>0?'+':'') + tc.toFixed(1);
+    els.trueCount.className = 'count-value ' + (tc>0?'pos':tc<0?'neg':'neu');
+
+    const seenPct = Math.min(100, (state.seenCount/TOTAL_CARDS)*100);
+    els.shoeFill.style.width = seenPct + '%';
+    els.shoeNeedle.style.left = seenPct + '%';
+    els.cardsSeenCap.textContent = state.seenCount + ' / ' + TOTAL_CARDS + ' cărți văzute';
+    els.decksLeftCap.textContent = decksRemaining().toFixed(1) + ' pachete rămase';
+    els.penetration.textContent = seenPct.toFixed(0) + '%';
+
+    let low=0, high=0;
+    // recompute low/high from a shadow log kept in undoStack ranks
+    state.undoStack.forEach(u=>{
+      const v = cardValue(u.rank);
+      if(v>=2 && v<=6) low++;
+      else if(v===10 || u.rank==='A') high++;
+    });
+    els.lowSeen.textContent = low;
+    els.highSeen.textContent = high;
+
+    const edge = -0.6 + tc*0.5;
+    els.edgeEstimate.textContent = (edge>=0?'+':'') + edge.toFixed(2) + '%';
+    els.edgeEstimate.style.color = edge>=0 ? 'var(--green)' : 'var(--red)';
+
+    let spread = '1 unitate';
+    if(tc>=4) spread = '8 unități';
+    else if(tc>=3) spread = '6 unități';
+    else if(tc>=2) spread = '4 unități';
+    else if(tc>=1) spread = '2 unități';
+    els.betSpread.textContent = spread;
+
+    // dealer
+    els.dealerCards.innerHTML = state.dealer.cards.length
+      ? state.dealer.cards.map(r=>`<span class="card-chip">${r}</span>`).join('')
+      : '<span style="color:var(--muted2);font-size:12px;">— fără cărți —</span>';
+
+    // hands
+    renderHand(0);
+    if(state.hands[1]){
+      els.handRow1.style.display = '';
+      renderHand(1);
+    } else {
+      els.handRow1.style.display = 'none';
+    }
+
+    // recommendation (based on active hand, or hand0 if none set)
+    const activeIdx = state.hands[1] ? state.activeHandIndex : 0;
+    const hand = state.hands[activeIdx];
+    const dCat = dealerCategory(state.dealer.cards[0]);
+    const canSplit = hand.cards.length===2 && isPair(hand.cards) && !hand.fromSplit && !hand.fromSplitAces && !state.hands[1];
+    const canDouble = hand.cards.length===2 && !hand.fromSplit;
+
+    els.btnSplit.disabled = !canSplit;
+
+    if(hand.fromSplitAces && hand.cards.length>=2){
+      els.recoAction.textContent = 'STAND';
+      els.recoAction.className = 'reco-action STAND';
+      els.recoSub.textContent = 'Mână din split de aşi — o singură carte per as, fără hit ulterior.';
+      els.recoDev.style.display = 'none';
+    } else if(dCat===null){
+      els.recoAction.textContent = '—';
+      els.recoAction.className = 'reco-action';
+      els.recoSub.textContent = 'Introdu cartea crupierului și cărțile tale ca să vezi recomandarea.';
+      els.recoDev.style.display = 'none';
+    } else if(hand.cards.length===0){
+      els.recoAction.textContent = '—';
+      els.recoAction.className = 'reco-action';
+      els.recoSub.textContent = 'Adaugă cărțile tale.';
+      els.recoDev.style.display = 'none';
+    } else {
+      const rec = getRecommendation(hand, dCat, tc, canSplit, canDouble);
+      const labelMap = { H:'HIT', S:'STAND', D:'DOUBLE', P:'SPLIT' };
+      const txt = labelMap[rec.action] || '—';
+      els.recoAction.textContent = txt;
+      els.recoAction.className = 'reco-action ' + txt;
+      const totalTxt = rec.soft ? `soft ${rec.total}` : (rec.total!=null?`hard ${rec.total}`:'');
+      els.recoSub.textContent = `Mâna ta: ${totalTxt || 'pereche'} vs crupier ${state.dealer.cards[0]}.`;
+      if(rec.dev){
+        els.recoDev.style.display='block';
+        els.recoDev.textContent = '↳ deviere pe count: ' + rec.dev;
+      } else {
+        els.recoDev.style.display='none';
+      }
+    }
+
+    // insurance banner (if dealer up card is A)
+    if(state.dealer.cards[0]==='A' && state.dealer.cards.length===1){
+      const takeIns = state.deviationsOn && tc>=3;
+      els.recoAction.textContent = takeIns ? 'ASIGURARE: DA' : 'ASIGURARE: NU';
+      els.recoAction.className = 'reco-action ' + (takeIns?'INSURANCE-DA':'INSURANCE-NU');
+      els.recoSub.textContent = takeIns
+        ? 'True count ≥ +3 — asigurarea devine +EV statistic.'
+        : 'Basic strategy: nu lua niciodată asigurare fără un count ridicat.';
+    }
+
+    // stats
+    els.statHands.textContent = state.stats.hands;
+    els.statWins.textContent = state.stats.wins;
+    els.statLosses.textContent = state.stats.losses;
+    els.statPushes.textContent = state.stats.pushes;
+    els.statUnits.textContent = (state.stats.units>=0?'+':'') + state.stats.units.toFixed(1);
+    els.statUnits.className = 'num ' + (state.stats.units>0?'pos':state.stats.units<0?'neg':'');
+    els.statWinRate.textContent = state.stats.hands ? Math.round(100*state.stats.wins/state.stats.hands) + '%' : '—';
+
+    // history
+    if(state.history.length===0){
+      els.historyList.innerHTML = '<div class="hist-empty">Niciun rezultat logat încă.</div>';
+    } else {
+      els.historyList.innerHTML = state.history.slice().reverse().map(h=>{
+        const cls = h.result==='win'||h.result==='blackjack' ? 'r-win' : h.result==='push' ? 'r-push' : 'r-loss';
+        const rLabel = {win:'Câștig',blackjack:'Blackjack',push:'Push',loss:'Pierdere'}[h.result];
+        return `<div class="hist-item"><span>TC ${h.tc>=0?'+':''}${h.tc.toFixed(1)} · ${h.total}</span><span class="${cls}">${rLabel} (${h.units>=0?'+':''}${h.units})</span></div>`;
+      }).join('');
+    }
+  }
+
+  function renderHand(idx){
+    const hand = state.hands[idx];
+    const cardsEl = idx===0 ? els.handCards0 : els.handCards1;
+    const totalEl = idx===0 ? els.handTotal0 : els.handTotal1;
+    if(!hand || hand.cards.length===0){
+      cardsEl.innerHTML = '<span style="color:var(--muted2);font-size:12px;">— fără cărți —</span>';
+      totalEl.textContent = '—';
+      return;
+    }
+    cardsEl.innerHTML = hand.cards.map(r=>`<span class="card-chip">${r}</span>`).join('');
+    const { total, soft } = handTotal(hand.cards);
+    totalEl.textContent = (soft ? 'soft ' : 'hard ') + total + (total>21?' — BUST':'');
+  }
+
+  // ---------- interactions ----------
+  document.querySelectorAll('.target-switch button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.target-switch button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      state.target = btn.dataset.target;
+      if(state.target==='p2' && !state.hands[1]){
+        // allow pre-adding to p2 only if a split already happened; otherwise ignore silently
+      }
+    });
+  });
+
+  document.querySelectorAll('.pad button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const rank = btn.dataset.rank;
+      addCard(rank, state.target);
+      render();
+    });
+  });
+
+  function addCard(rank, target){
+    state.runningCount += hiLoValue(rank);
+    state.seenCount++;
+    state.undoStack.push({ rank, target, handIndex: target==='p1'?0:target==='p2'?1:null });
+
+    if(target==='dealer'){
+      state.dealer.cards.push(rank);
+    } else if(target==='p1'){
+      state.hands[0].cards.push(rank);
+      autoFinishSplitAce(0);
+    } else if(target==='p2'){
+      if(!state.hands[1]) state.hands[1] = makeHand();
+      state.hands[1].cards.push(rank);
+      autoFinishSplitAce(1);
+    }
+    // 'other' just feeds the count, no storage needed beyond undo stack
+  }
+
+  function autoFinishSplitAce(idx){
+    const h = state.hands[idx];
+    if(h && h.fromSplitAces && h.cards.length>=2){
+      // no further cards allowed by rule; UI already reflects via reco banner
+    }
+  }
+
+  document.getElementById('btnUndo').addEventListener('click', ()=>{
+    const last = state.undoStack.pop();
+    if(!last) return;
+    state.runningCount -= hiLoValue(last.rank);
+    state.seenCount = Math.max(0, state.seenCount-1);
+    if(last.target==='dealer'){
+      state.dealer.cards.pop();
+    } else if(last.target==='p1'){
+      state.hands[0].cards.pop();
+    } else if(last.target==='p2' && state.hands[1]){
+      state.hands[1].cards.pop();
+    }
+    render();
+  });
+
+  els.btnSplit.addEventListener('click', ()=>{
+    const hand = state.hands[0];
+    if(hand.cards.length!==2 || !isPair(hand.cards)) return;
+    const wasAce = hand.cards[0]==='A';
+    const c1 = hand.cards[0], c2 = hand.cards[1];
+    state.hands[0] = { cards:[c1], fromSplit:true, fromSplitAces:wasAce, doubled:false };
+    state.hands[1] = { cards:[c2], fromSplit:true, fromSplitAces:wasAce, doubled:false };
+    render();
+  });
+
+  els.chkDoubled.addEventListener('change', ()=>{
+    const idx = state.hands[1] ? state.activeHandIndex : 0;
+    state.hands[idx].doubled = els.chkDoubled.checked;
+  });
+
+  document.getElementById('btnDeviations').addEventListener('click', (e)=>{
+    state.deviationsOn = !state.deviationsOn;
+    e.target.textContent = state.deviationsOn ? 'ON' : 'OFF';
+    e.target.classList.toggle('toggle-on', state.deviationsOn);
+    render();
+  });
+
+  document.getElementById('btnNewHand').addEventListener('click', ()=>{
+    state.dealer = { cards:[] };
+    state.hands = [ makeHand() ];
+    state.activeHandIndex = 0;
+    els.chkDoubled.checked = false;
+    render();
+  });
+
+  document.getElementById('btnNewShoe').addEventListener('click', ()=>{
+    if(!confirm('Confirmi amestecarea? Resetează count-ul și shoe-ul (statisticile de sesiune rămân).')) return;
+    state.seenCount = 0;
+    state.runningCount = 0;
+    state.undoStack = [];
+    state.dealer = { cards:[] };
+    state.hands = [ makeHand() ];
+    render();
+  });
+
+  document.getElementById('btnResetStats').addEventListener('click', ()=>{
+    if(!confirm('Resetează statisticile de sesiune și istoricul?')) return;
+    state.stats = { hands:0, wins:0, losses:0, pushes:0, units:0 };
+    state.history = [];
+    render();
+  });
+
+  document.querySelectorAll('[data-outcome]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const outcome = btn.dataset.outcome;
+      const idx = state.hands[1] ? state.activeHandIndex : 0;
+      const hand = state.hands[idx];
+      const mult = hand.doubled ? 2 : 1;
+      let units = 0;
+      if(outcome==='win') units = 1*mult;
+      else if(outcome==='blackjack') units = 1.5;
+      else if(outcome==='push') units = 0;
+      else if(outcome==='loss') units = -1*mult;
+
+      state.stats.hands++;
+      if(outcome==='win'||outcome==='blackjack') state.stats.wins++;
+      else if(outcome==='loss') state.stats.losses++;
+      else state.stats.pushes++;
+      state.stats.units += units;
+
+      const { total, soft } = handTotal(hand.cards);
+      state.history.push({
+        tc: trueCountVal(),
+        total: (hand.cards.length ? (soft?'soft ':'hard ')+total : '—'),
+        result: outcome,
+        units
+      });
+      render();
+    });
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
